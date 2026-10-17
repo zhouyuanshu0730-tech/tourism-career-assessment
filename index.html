@@ -52,25 +52,6 @@ footer{text-align:center;color:#8090a5;font-size:12px;padding:25px}
   <div class="card">
    <h2>你的 AI 职业测评结果</h2>
    <button onclick="exportReport()">保存 / 分享报告</button>
-   function exportReport() {
-  const report = document.querySelector("#result pre");
-
-  if (!report) {
-    alert("请先完成测评，生成 AI 报告后再导出。");
-    return;
-  }
-
-  const text = report.innerText;
-
-  if (navigator.share) {
-    navigator.share({
-      title: "AI 职业测评报告",
-      text: text
-    }).catch(() => {});
-  } else {
-    alert("请使用 Safari 的分享功能保存报告。");
-  }
-}
    <p id="summary"></p >
    <div id="tags"></div>
   </div>
@@ -197,6 +178,25 @@ function drawRadar(vals){
  out+='<polygon points="'+points+'" fill="#55b6cf" fill-opacity=".35" stroke="#187ba8" stroke-width="2.5"/>';
  vals.forEach((v,i)=>{let p=pt(i,v/100);out+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#1769aa"/>';});
  svg.innerHTML=out;
+}
+function exportReport() {
+  const result = document.getElementById("result");
+
+  if (!result || result.style.display === "none") {
+    alert("请先完成测评，再保存报告。");
+    return;
+  }
+
+  const report = result.innerText;
+
+  if (navigator.share) {
+    navigator.share({
+      title: "大学生文旅职业能力测评报告",
+      text: report
+    }).catch(() => {});
+  } else {
+    alert("请使用手机浏览器的分享功能保存报告。");
+  }
 }
 </script>
 </body>
