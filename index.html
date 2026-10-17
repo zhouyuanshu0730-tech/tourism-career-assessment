@@ -51,7 +51,26 @@ footer{text-align:center;color:#8090a5;font-size:12px;padding:25px}
  <section class="result" id="result">
   <div class="card">
    <h2>你的 AI 职业测评结果</h2>
-   <button onclick="window.print()">导出 PDF / 打印报告</button>
+   <button onclick="exportReport()">保存 / 分享报告</button>
+   function exportReport() {
+  const report = document.querySelector("#result pre");
+
+  if (!report) {
+    alert("请先完成测评，生成 AI 报告后再导出。");
+    return;
+  }
+
+  const text = report.innerText;
+
+  if (navigator.share) {
+    navigator.share({
+      title: "AI 职业测评报告",
+      text: text
+    }).catch(() => {});
+  } else {
+    alert("请使用 Safari 的分享功能保存报告。");
+  }
+}
    <p id="summary"></p >
    <div id="tags"></div>
   </div>
