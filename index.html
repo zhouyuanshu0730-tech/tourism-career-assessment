@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文旅职业AI测评</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#24334d;font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei",sans-serif}
+header{background:linear-gradient(135deg,#153e75,#287ca5);color:white;padding:28px 20px}
+.wrap{max-width:900px;margin:auto;padding:20px}
+h1{font-size:27px;margin:0 0 10px}
+p{line-height:1.8}
+.tag{display:inline-block;background:#e4f5f0;color:#187b65;border-radius:20px;padding:7px 13px;margin:5px 5px 5px 0;font-size:13px}
+.card{background:white;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 4px 18px #18395b0c}
+h2{font-size:19px;margin-top:0}
+label{display:block;padding:11px;margin:7px 0;background:#f5f8fc;border-radius:9px;cursor:pointer}
+input[type=radio]{margin-right:9px}
+button{background:#1769aa;color:white;border:0;border-radius:10px;padding:13px 20px;font-size:15px;cursor:pointer}
+button:disabled{opacity:.6}
+.small{color:#718096;font-size:13px}
+.result{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.metric{background:#f4f8fc;padding:14px;border-radius:12px}
+.metric b{font-size:24px;color:#1769aa}
+li{margin:10px 0;line-height:1.7}
+svg{width:100%;max-width:420px;display:block;margin:auto}
+footer{text-align:center;color:#8090a5;font-size:12px;padding:25px}
+</style>
+</head>
+<body>
+<header>
+ <div class="wrap">
+  <p>AI CAREER · SMART TOURISM</p >
+  <h1>大学生文旅职业能力测评</h1>
+  <p>发现你的优势，探索适合自己的文旅职业方向。</p >
+  <span class="tag">景区接待</span>
+  <span class="tag">酒店运营</span>
+  <span class="tag">研学服务</span>
+ </div>
+</header>
+<main class="wrap">
+ <section class="card" id="quiz">
+  <h2>第一步：认识你的职业倾向</h2>
+  <p class="small">请选择最符合你真实情况的选项。完成后即可查看初步测评报告。</p >
+  <div id="questions"></div>
+  <button onclick="makeReport()">生成我的测评报告</button>
+  <p class="small">本页面当前使用本地示例评分，不会自动调用 DeepSeek API。</p >
+ </section>
+ <section class="result" id="result">
+  <div class="card">
+   <h2>你的 AI 职业测评结果</h2>
+   <p id="summary"></p >
+   <div id="tags"></div>
+  </div>
+  <div class="card">
+   <h2>六维职业能力雷达图</h2>
+   <svg id="radar" viewBox="0 0 360 330" role="img" aria-label="六维职业能力雷达图"></svg>
+   <p class="small">分数为问卷选项换算的初步参考值，并非经过验证的标准化职业测评。</p >
+  </div>
+  <div class="card">
+   <h2>岗位匹配建议</h2>
+   <div class="grid" id="jobs"></div>
+  </div>
+  <div class="card">
+   <h2>你的优势与挑战</h2>
+   <h3>值得发展的优势</h3><ul id="strengths"></ul>
+   <h3>需要关注的挑战</h3><ul id="challenges"></ul>
+  </div>
+  <div class="card">
+   <h2>未来 30 天行动计划</h2>
+   <ol id="plan"></ol>
+   <button onclick="window.print()">打印 / 保存报告</button>
+   <button onclick="location.reload()" style="background:#64748b">重新测评</button>
+  </div>
+ </section>
+</main>
+<footer>AI + 文旅职业探索 · 测评结果仅供学习、实习与就业规划参考</footer>
+<script>
+const qs=[
+["你更喜欢哪种工作场景？",["与游客面对面交流","统筹流程、安排日常运营","带领学生探索知识","分析数据、制定方案"]],
+["面对陌生人，你通常会？",["主动沟通并提供帮助","先了解需求再安排","通过讲解建立互动","观察情况后理性判断"]],
+["遇到突发问题时，你会？",["先安抚对方情绪","迅速协调人员和流程","耐心解释并调整活动","收集信息后寻找原因"]],
+["你最有信心的能力是？",["表达沟通与服务","组织协调与执行","讲解表达与活动设计","数据分析与解决问题"]],
+["你希望实习获得什么？",["一线服务经验","运营管理经验","教育活动实践经验","数据与规划经验"]],
+["你更喜欢怎样的工作节奏？",["与人互动、变化较多","按流程推进、多任务","围绕主题开展活动","有目标、重视分析"]],
+["遇到不熟悉的任务时，你会？",["先询问并尝试服务","列步骤并协调资源","查资料设计活动","拆解问题并验证"]],
+["你未来更倾向于？",["景区接待与游客服务","酒店运营与管理","研学旅行与活动执行","文旅策划与数据支持"]]
+];
+const axes=["沟通服务","组织协调","应变能力","讲解表达","数据分析","学习执行"];
+const qsBox=document.getElementById("questions");
+qs.forEach((q,i)=>{
+ let d=document.createElement("div");
+ d.innerHTML="<p><b>"+(i+1)+". "+q[0]+"</b></p >"+
+ q[1].map((v,j)=>'<label><input type="radio" name="q'+i+'" value="'+j+'">'+v+'</label>').join("");
+ qsBox.appendChild(d);
+});
+function makeReport(){
+ let answers=[];
+ for(let i=0;i<qs.length;i++){
+  let a=document.querySelector('input[name="q'+i+'"]:checked');
+  if(!a){alert("请先完成第 "+(i+1)+" 题。");return}
+  answers.push(Number(a.value));
+ }
+ let scores=[0,0,0,0,0,0];
+ const mapping=[[0,1,3,4],[0,1,3,4],[2,1,3,4],[0,1,3,4],[5,1,3,4],[0,1,3,4],[0,1,3,4],[0,1,3,4]];
+ answers.forEach((a,i)=>scores[mapping[i][a]]+=1);
+ scores=scores.map(s=>Math.round(45+s*11));
+ scores=scores.map(s=>Math.min(100,s));
+ const names=["景区接待","酒店运营","研学服务","文旅策划"];
+ const descriptions=[
+ "适合探索游客咨询、前台接待、投诉协调和服务流程等实践任务。",
+ "适合探索前厅、客房协调、服务质量与日常运营管理。",
+ "适合探索研学活动执行、团队接待、路线讲解和安全协作。",
+ "适合探索活动策划、游客需求调研、产品运营与数据整理。"
+ ];
+ const rank=[scores[0]+scores[2],scores[1]+scores[5],scores[3]+scores[0],scores[4]+scores[5]];
+ let order=[0,1,2,3].sort((a,b)=>rank[b]-rank[a]);
+ document.getElementById("summary").textContent="你的初步推荐方向是："+names[order[0]]+"。建议结合个人兴趣、专业课程、实践经历和真实岗位要求进一步验证。";
+ document.getElementById("tags").innerHTML=order.slice(0,3).map(i=>'<span class="tag">'+names[i]+'</span>').join("");
+ document.getElementById("jobs").innerHTML=order.map(i=>'<div class="metric"><b>'+names[i]+'</b><p>'+descriptions[i]+'</p ><p>探索优先级：'+(rank[i])+'</p ></div>').join("");
+ document.getElementById("strengths").innerHTML=axes.filter((n,i)=>scores[i]>=65).map(n=>"<li>"+n+"：可以通过项目实践进一步发挥。</li>").join("")||"<li>你正处于探索阶段，可从课程和实习任务中逐步发现优势。</li>";
+ document.getElementById("challenges").innerHTML=axes.filter((n,i)=>scores[i]<65).map(n=>"<li>"+n+"：建议通过练习、课程或实习积累经验。</li>").join("")||"<li>继续保持均衡发展，并通过真实岗位任务检验能力。</li>";
+ const plan=[
+ "第 1—7 天：了解 3 个目标岗位的招聘要求，记录所需技能。",
+ "第 8—14 天：完成一项练习，例如游客接待情景模拟或酒店服务流程设计。",
+ "第 15—21 天：制作一份简历，整理课程项目、活动经历和可证明的能力。",
+ "第 22—30 天：申请相关实习或访谈 2 位行业从业者，复盘并调整目标。"
+ ];
+ document.getElementById("plan").innerHTML=plan.map(x=>"<li>"+x+"</li>").join("");
+ drawRadar(scores);
+ document.getElementById("quiz").style.display="none";
+ document.getElementById("result").style.display="block";
+ window.scrollTo(0,0);
+}
+function drawRadar(vals){
+ const svg=document.getElementById("radar");
+ const cx=180,cy=150,r=100;
+ const pt=(i,scale)=>{
+  const a=-Math.PI/2+i*Math.PI*2/6;
+  return [cx+Math.cos(a)*r*scale,cy+Math.sin(a)*r*scale];
+ };
+ let out="";
+ for(let k=1;k<=4;k++){
+  let p=Array.from({length:6},(_,i)=>pt(i,k/4).join(",")).join(" ");
+  out+='<polygon points="'+p+'" fill="none" stroke="#d9e3ef" stroke-width="1"/>';
+ }
+ for(let i=0;i<6;i++){
+  let p=pt(i,1);
+  out+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0]+'" y2="'+p[1]+'" stroke="#d9e3ef"/>';
+  let t=pt(i,1.25);
+  out+='<text x="'+t[0]+'" y="'+t[1]+'" font-size="11" text-anchor="middle" dominant-baseline="middle" fill="#52647c">'+axes[i]+'</text>';
+ }
+ let points=vals.map((v,i)=>pt(i,v/100).join(",")).join(" ");
+ out+='<polygon points="'+points+'" fill="#55b6cf" fill-opacity=".35" stroke="#187ba8" stroke-width="2.5"/>';
+ vals.forEach((v,i)=>{let p=pt(i,v/100);out+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#1769aa"/>';});
+ svg.innerHTML=out;
+}
+</script>
+</body>
+</html>
