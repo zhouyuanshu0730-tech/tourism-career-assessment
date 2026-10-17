@@ -183,20 +183,65 @@ function exportReport() {
   const result = document.getElementById("result");
 
   if (!result || result.style.display === "none") {
-    alert("请先完成测评，再保存报告。");
+    alert("请先完成测评，再导出报告。");
     return;
   }
 
-  const report = result.innerText;
+  const reportWindow = window.open("", "_blank");
 
-  if (navigator.share) {
-    navigator.share({
-      title: "大学生文旅职业能力测评报告",
-      text: report
-    }).catch(() => {});
-  } else {
-    alert("请使用手机浏览器的分享功能保存报告。");
+  if (!reportWindow) {
+    alert("请允许 Safari 打开新页面，然后再试一次。");
+    return;
   }
+  const reportContent = result.cloneNode(true);
+  reportContent.querySelectorAll("button").forEach(button => button.remove());
+
+  reportWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>大学生文旅职业能力测评报告</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+          color: #24334d;
+          padding: 20px;
+          line-height: 1.8;
+        }
+        h2 { color: #1769aa; }
+        .card {
+          border: 1px solid #d9e3ef;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 18px;
+          break-inside: avoid;
+        }
+        .metric { padding: 10px; background: #f4f8fc; }
+        pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+        svg { max-width: 100%; height: auto; }
+        @media print {
+          body { padding: 0; }
+          button { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>大学生文旅职业能力测评报告</h1>
+      <p>报告生成时间：${new Date().toLocaleString("zh-CN")}</p>
+      <div id="report"></div>
+    </body>
+    </html>
+  `);
+
+  reportWindow.document.close();
+  reportWindow.document.getElementById("report").appendChild(reportContent);
+  reportWindow.focus();
+
+  setTimeout(() => {
+    reportWindow.print();
+  }, 800);
 }
 </script>
 </body>
