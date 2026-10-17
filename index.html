@@ -130,6 +130,27 @@ function makeReport(){
  ];
  document.getElementById("plan").innerHTML=plan.map(x=>"<li>"+x+"</li>").join("");
  drawRadar(scores);
+ fetch("/api/assessment", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ answers })
+})
+.then(r => r.json())
+.then(data => {
+  if (data.report) {
+    const box = document.createElement("div");
+    box.className = "card";
+    box.innerHTML = "<h2>DeepSeek AI 职业分析报告</h2>";
+    const content = document.createElement("pre");
+    content.style.whiteSpace = "pre-wrap";
+    content.textContent = data.report;
+    box.appendChild(content);
+    document.getElementById("result").appendChild(box);
+  } else {
+    alert(data.error || "AI 报告生成失败，请稍后重试。");
+  }
+})
+.catch(() => alert("连接 AI 服务失败，请稍后重试。"));
  document.getElementById("quiz").style.display="none";
  document.getElementById("result").style.display="block";
  window.scrollTo(0,0);
